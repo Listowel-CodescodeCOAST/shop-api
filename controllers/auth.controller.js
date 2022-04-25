@@ -1,6 +1,7 @@
 const User = require("../models/user.model");
 const { loginSchema, registerSchema} = require("../utils/validation")
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken")
 
 const register = async (req, res) => {
     const { value, error } = registerSchema.validate(req.body);
@@ -9,9 +10,9 @@ const register = async (req, res) => {
         return res.status(400).json(error.message);
     }
 
-    let user = await User.findOne({ email: value.email});
+    let user = await User.findOne({ email: value.email });
     if (user) {
-        return res.status(409).json({ msg: "Email already in use."});
+        return res.status(409).json({ msg: "Email already in use." });
     }
 
     const hashedPassword = await bcrypt.hash(value.password, 10);
@@ -45,7 +46,22 @@ const login = async (req, res) => {
     if (!isMatch) {
         return res.status(400).json({ msg: "Invalid credentials"});
     }
-    res.status(200).json(user);
+    //genrate tokken
+    const token = jwt.sign(
+        //paylod or object
+        {
+        id: user._id,
+        username: user.username,
+    }, 
+    // secret key used to encode the paylod
+    "listowel", 
+    //options
+    {
+        expiresIn: "1h",
+    }
+    );
+
+    res.status(200).json(token);
 };
 
 module.exports = {
